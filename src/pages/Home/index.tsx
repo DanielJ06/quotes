@@ -3,7 +3,9 @@ import QuoteIcon from "@expo/vector-icons/FontAwesome";
 import Icon from "@expo/vector-icons/Feather";
 import BookmarkIcon from "@expo/vector-icons/MaterialIcons";
 import { Pressable, Share, View } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
+import reactotron from "../../config/reactotron";
 import * as S from "./styles";
 import api from "../../services/quotes";
 import { Quote } from "../../types/quote";
@@ -17,7 +19,10 @@ const Home: React.FC = () => {
 	const [randomQuote, setQuote] = useState<Quote>();
 
 	const loadQuote = async () => {
+		const bench = reactotron.benchmark!("Fetch quotes");
+		bench.step("Func chamada");
 		const res = await api.get("random");
+		bench.stop("Request feito");
 		if (res.data) {
 			setQuote({
 				author: res.data[0].a,
@@ -27,8 +32,13 @@ const Home: React.FC = () => {
 	};
 
 	const handleShare = async (quote: Quote) => {
-		await Share.share({
-			message: `"${quote.quote}" - ${quote.author}`,
+		await AsyncStorage.getItem("@app/quote").then(async (data) => {
+			if (data) {
+				await AsyncStorage.removeItem("@app/quote");
+				await AsyncStorage.setItem("@app/quote", quote.quote);
+			} else {
+				await AsyncStorage.setItem("@app/quote", quote.quote);
+			}
 		});
 	};
 
