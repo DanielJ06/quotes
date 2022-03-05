@@ -2,10 +2,12 @@ import React, { useEffect, useState } from "react";
 import QuoteIcon from "@expo/vector-icons/FontAwesome";
 import Icon from "@expo/vector-icons/Feather";
 import BookmarkIcon from "@expo/vector-icons/MaterialIcons";
-import { Pressable, Share, View } from "react-native";
+import { Dimensions, Pressable, Share, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { createShimmerPlaceholder } from "react-native-shimmer-placeholder";
+import { LinearGradient } from "expo-linear-gradient";
+import LottieView from "lottie-react-native";
 
-import reactotron from "../../config/reactotron";
 import * as S from "./styles";
 import api from "../../services/quotes";
 import { Quote } from "../../types/quote";
@@ -14,20 +16,29 @@ import { addQuote, removeQuote } from "../../store/modules/bookmark/actions";
 import { RootState } from "../../types/RootState";
 
 const Home: React.FC = () => {
+	const { width: WIDTH } = Dimensions.get("window");
 	const { quotes } = useSelector((state: RootState) => state.bookmark);
 	const dispatch = useDispatch();
 	const [randomQuote, setQuote] = useState<Quote>();
+	const [loading, setLoading] = useState(false);
+	const [error, setError] = useState(true);
+	const ShimmerPlaceholder = createShimmerPlaceholder(LinearGradient);
 
 	const loadQuote = async () => {
-		const bench = reactotron.benchmark!("Fetch quotes");
-		bench.step("Func chamada");
-		const res = await api.get("random");
-		bench.stop("Request feito");
-		if (res.data) {
-			setQuote({
-				author: res.data[0].a,
-				quote: res.data[0].q,
-			});
+		setError(false);
+		setLoading(true);
+		try {
+			const res = await api.get("random");
+			if (res.data) {
+				setQuote({
+					author: res.data[0].a,
+					quote: res.data[0].q,
+				});
+			}
+			setLoading(false);
+		} catch (err) {
+			setLoading(false);
+			setError(true);
 		}
 	};
 
@@ -67,13 +78,47 @@ const Home: React.FC = () => {
 
 	return (
 		<S.Container>
-			{randomQuote && (
+			{randomQuote && !error ? (
 				<>
 					<View />
 					<View>
 						<QuoteIcon size={25} color="#15a691" name="quote-left" />
-						<S.Quote>{randomQuote.quote}</S.Quote>
-						<S.Author>{randomQuote.author}</S.Author>
+						{loading ? (
+							<View>
+								<ShimmerPlaceholder
+									style={{
+										marginVertical: 5,
+										borderRadius: 10,
+										marginLeft: 25,
+									}}
+									width={WIDTH * 0.8}
+									height={25}
+								/>
+								<ShimmerPlaceholder
+									width={WIDTH * 0.6}
+									style={{
+										marginVertical: 5,
+										borderRadius: 10,
+										marginLeft: 25,
+									}}
+									height={25}
+								/>
+								<ShimmerPlaceholder
+									style={{
+										marginVertical: 5,
+										borderRadius: 10,
+										marginLeft: 25,
+									}}
+									width={WIDTH * 0.7}
+									height={25}
+								/>
+							</View>
+						) : (
+							<>
+								<S.Quote>{randomQuote.quote}</S.Quote>
+								<S.Author>{randomQuote.author}</S.Author>
+							</>
+						)}
 					</View>
 					<S.Actions>
 						{isBookmarked(randomQuote) ? (
@@ -93,6 +138,12 @@ const Home: React.FC = () => {
 						</Pressable>
 					</S.Actions>
 				</>
+			) : (
+				<LottieView
+					source={require("../../assets/error_dog.json")}
+					autoPlay
+					loop
+				/>
 			)}
 		</S.Container>
 	);
