@@ -5,20 +5,14 @@ import { Quote } from "../../types/quote";
 
 interface IQuoteCard {
 	quote: Quote;
+	longPressCb?: (quote: Quote) => any;
 }
 
 import * as S from "./styles";
-import { useDispatch } from "react-redux";
-import { removeQuote } from "../../store/modules/bookmark/actions";
 
-const QuoteCard: React.FC<IQuoteCard> = ({ quote }) => {
-	const dispatch = useDispatch();
-	const handleDelete = (quote: Quote) => {
-		dispatch(removeQuote(quote));
-	};
-
+const QuoteCard: React.FC<IQuoteCard> = ({ quote, longPressCb }) => {
 	return (
-		<S.Container onLongPress={() => handleDelete(quote)}>
+		<S.Container onLongPress={() => (longPressCb ? longPressCb(quote) : {})}>
 			<QuoteIcon size={15} color="#15a691" name="quote-left" />
 			<View style={{ marginStart: 10 }}>
 				<S.Quote numberOfLines={1}>{quote.quote}</S.Quote>
